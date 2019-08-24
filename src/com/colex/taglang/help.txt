@@ -1,0 +1,3 @@
+This is the command line interface to Taglang. Taglang is a natural language processing interface. The interface is intended to be used for processing languages using what are called Tags.
+Each morpheme and word is tagged
+with a tag.
