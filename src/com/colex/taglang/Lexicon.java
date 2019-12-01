@@ -50,44 +50,180 @@ public final void addTags(Tag[] tags, boolean checkDuplicates){
     
     long wordlp;
     
-    if(checkDuplicates){
-        //TODO: Insert method to check if there are duplicates.
-    }
+    int[] tagi = new int[tags.length]; //Shows the location of each tag (If it already exists) or -1 if it doesn't. To void duplicates.
     
+    if(checkDuplicates){ 
+        tagi = findTags(tags); //Checks to see whether or not tags already exists.
+    }
        try{ 
-        rf = new RandomAccessFile(this.file,"rw");
-        rf.seek(0x03);
+        rf = new RandomAccessFile(this.file,"rw"); //Opens the file
+        rf.seek(0x03); //jumps to right after the magic number.
         taglp = rf.readShort();
         wordlp = rf.readLong();
         
-        rf.seek(taglp);
+        rf.seek(taglp); //Jumps to the taglist
         
-        tagll = rf.readInt();
+        tagll = rf.readInt(); //Reads the tag length
         
-        for(int i=0;i<tags.length;i++){
-            FileAccess.insert(rf, (byte)0);
-            FileAccess.insert(rf,tags[i].text);
-            wordlp +=tags[i].text.length() +1;
-            tagll++;
+        
+        
+        for(int i =0;i < tags.length; i++){
+         if(tagi[i] == -1 && checkDuplicates){ //If the tag doesn't exist yet. add it
+           // FileAccess.insert(rf, (byte)0); //Insert tthe seperator (0) byte for tags. //CONSIDER: REMOVE
+           System.out.print(tagi[i]); //DEBUG
+            FileAccess.insertUTF(rf, tags[i].text); 
+            
+            wordlp += tags[i].text.length() + 1; 
+            tagll++; 
+          }
         }
-        rf.seek(taglp);
-        rf.writeInt(tagll);
+        rf.seek(taglp); //Jumps back to the start of the taglist
+        rf.writeInt(tagll); //update the length of the taglist
         
-        rf.seek(0x03);
-        rf.writeShort(taglp);
-        rf.writeLong(wordlp);
+        rf.seek(0x03); //Back to the header of the file(after the magic number). 
+        rf.writeShort(taglp); //update the tag pointer
+        rf.writeLong(wordlp); //update the word pointer.
         rf.close();
        }catch(EOFException e){
            //TODO: Throw appropriate exception here
+           System.out.print("EOF");
        }
        catch(FileNotFoundException e){
            //TODO: Throw appropriate exception here
+           System.out.println("FNF");
        }catch(IOException e){
            //TODO: Throw apprpriate exception here
+           System.out.print("IOE");
        }
    
     
 }
+
+/**
+ * Gets the tag at a particular index
+ * @param index
+ * @return 
+ */
+public Tag getTag(int index){
+    
+    RandomAccessFile rf;
+    
+    Tag tag;
+    
+    short taglp; //Pointer to the taglist
+    int tagll; //Number of tags in the taglist
+    
+   try{ 
+    rf = new RandomAccessFile(this.file,"rw");
+    
+    rf.seek(0x03);
+    
+    taglp = rf.readShort();
+    
+    rf.seek(taglp);
+    
+    tagll = rf.readInt();
+    
+    if(index > tagll){
+        //ERROR: Index out of bounds
+        System.out.println("Error: Tag index out of bounds");
+    }
+    
+    int b = 3; //Temporary variable initialized to arbitrary non zero value
+    
+    while( b != 0){
+        rf.readUTF();
+        
+    }
+    
+    
+    
+   }catch(FileNotFoundException e){
+       
+       e.printStackTrace();
+       
+   }catch(IOException e){
+       e.printStackTrace();
+   }
+   
+    tag = new Tag("");
+    return tag;
+    
+}
+
+/**
+ * Finds the index of various tags
+ * @param tags
+ * @return an array of integer of length equal to than of the @param tag, each 
+ * element of the array is an index of the  corresponding tag, or -1 if the tag doesn't exist
+ */
+
+public final int[] findTags(Tag[] tags){
+  int[] idx = new int[tags.length];
+  short taglp;
+  int tagll;
+  
+  //Set Default idx values to -1
+  for(int i=0;i<tags.length;i++){
+      idx[i] = -1;
+  }
+  
+  RandomAccessFile rf;
+ try{ 
+  rf = new RandomAccessFile(this.file,"rw");
+  
+  rf.seek(0x03); //Jumps to right after the magic number.
+  
+  taglp = rf.readShort(); 
+  
+  rf.seek(taglp);
+  
+  tagll = rf.readInt();
+  
+  if(tagll == 0){
+      return idx;
+  }
+  
+  for(int i=0;i<tagll;i++){
+      String str = rf.readUTF();
+      for(int j =0; j<tags.length;j++){
+         String tagstr = "$";
+         tagstr = tagstr.concat(str);
+         if(tagstr.equals(tags[j].toString())){
+           idx[j] = tagll -j;
+         }        
+      }
+  }
+  
+  return idx;
+  
+ }catch(FileNotFoundException e){
+     
+ }catch(IOException e){
+     
+ } 
+  
+  
+ return idx;  
+    
+}
+
+/**
+ * Finds a tag
+ * @return true if the tag is found and false otherwise.
+ */
+public final boolean findTag(Tag tg){
+    Tag tgs[] = new Tag[1];
+    int idx[] = new int[1];
+    tgs[0] = tg;
+    idx = findTags(tgs);
+    
+    if(idx[0] == -1)
+        return false;
+    else
+        return true;
+}
+
 /**
  * Adds a word to the lexicon along with a sequence of tags associated with it.
  * 
@@ -130,67 +266,50 @@ public final void addWord(String word, Tag[] tags, boolean checkTagDuplicates,bo
   int wordll; //Number of words in the wordlist
   
   int tagi[] = new int[tags.length]; //Index for each tag
-    
- if(checkTagDuplicates){
-     //TODO: Insert method to check for tags that already exists
- }
- if(checkWordDuplicates){
-     //TODO: Insert method to find words that already exist
- }
- 
- 
- try{
-  rf = new RandomAccessFile(this.file,"rw");
   
-  rf.seek(0x03);
-  taglp = rf.readShort(); //Pointer to taglist
-  wordlp = rf.readLong(); //Pointer to wordlist
-  
-  rf.seek(taglp);
-  
-  tagll = rf.readInt();
-  
-   //Adds list of tags
-   for(int i=0;i<tags.length;i++){
-            FileAccess.insert(rf, (byte)0);
-            FileAccess.insert(rf,tags[i].text);
-            wordlp +=tags[i].text.length() +1;
-            tagll++;
-            tagi[i] = tagll;
-        }
-   rf.seek(taglp);
-   rf.writeInt(tagll);
-  
-   rf.seek(wordlp);
-  
-   wordll = rf.readInt();
-   
-  //Add word tag pointers
-  for(int i=0;i<tags.length;i++){
-      FileAccess.insert(rf, i);
+  if(checkWordDuplicates){
+     if(findWord(word)>0){
+         return;
+     }
   }
-  FileAccess.insert(rf, 0);
-  
-  rf.seek(wordlp);
-  rf.writeInt(wordll+1);
-  //Adds word
-  FileAccess.insert(rf, word);
  
-  //Resets the taglist and wordlist pointer pointers
-  rf.seek(0x03);
-  rf.writeShort(taglp);
-  rf.writeLong(wordlp);
-  rf.close();
- } 
- catch(EOFException e){
-    //TODO: Throw appropriate exception here       
+  try{
+    rf = new RandomAccessFile(this.file,"rw");
   
- }catch(FileNotFoundException e){
-    //TODO: Throw appropriate error here 
- }
- catch(IOException e){
+    rf.seek(0x03);
+    taglp = rf.readShort(); //Pointer to taglist
+    wordlp = rf.readLong(); //Pointer to wordlist
+  
+   
+    addTags(tags,checkTagDuplicates); //Adds list of tags 
+    tagi = findTags(tags);
+  
+    rf.seek(wordlp);
+    wordll = rf.readInt();
+  //Add word tag indices
+    FileAccess.insertUTF(rf,word); //Adds word
+    FileAccess.insert(rf, (int)0);
+    for(int i=0;i<tags.length;i++){
+       FileAccess.insert(rf, tagi[i]);
+    }
+    rf.seek(wordlp);
+    rf.writeInt(wordll);
+    System.out.print(wordll); //What? DEBUG
+  
+    rf.close();
+   } 
+   catch(EOFException e){
+    //TODO: Throw appropriate exception here   
+    System.out.println("EOF:add");
+  
+   }catch(FileNotFoundException e){
+     //TODO: Throw appropriate error here 
+     System.out.println("FNF:add");
+   }
+   catch(IOException e){
+     System.out.println("IOEa:add");
      //TODO: Throw appropriate exception here
- }
+   }
 }
 /**
  *  Finds a word in the lexicon and returns the index of the word found. The word
@@ -216,40 +335,46 @@ public final int findWord(String word){
     rf = new RandomAccessFile(this.file,"rw");
     
     rf.seek(0x03);
+ 
     
-    taglp = rf.readShort();
+    rf.readShort();
     wordlp = rf.readLong();
-    
-    rf.seek(taglp);
-    tagll = rf.readInt();
-    
-    tagb = new boolean[tagll];
     
     //Find the word
     rf.seek(wordlp);
     wordll = rf.readInt();
     
-    for(int i=0;i<wordll;i++){
-            
-        String text;
-       
+    for(int i=0; i<wordll;i++){
+        String str;
+        int b = 3; //not zero
+        tagn = 0; //Number of tags on the word
+        while (b != 0){
+            b = rf.readInt(); //Read tag indices
+            tagn++;
+        }
+        str = rf.readUTF();
+        System.out.println(str); //DEBUG
+        if(str.equals(word)){
+            break;
+        }
         
+    }
+    
+    //TODO:REMOVE
+    /*
+    for(int i=0;i<wordll;i++){     
+        String text;
         int b =-1;
         
         
        text = FileAccess.readZString(rf);
         
-  
-       
        if(text.equals(word)){
            found = true;
-           
-           index = i;
+           index = wordll - i;
            
            while(b != 0){
                b = rf.readInt();
-               
-               tagb[b] = true;
                tagn++;
            }
           
@@ -261,28 +386,19 @@ public final int findWord(String word){
            
        }
     }
-    
-    this.wordTags = new Tag[tagn];
-    
-    String text;
-    int j=0;
-    for(int i=0;i<tagll;i++){
-        text = FileAccess.readZString(rf);
-        if(tagb[i]==true){
-         this.wordTags[j] = new Tag(text);
-         j++;
-        }
-    }
-    
+    */
+    this.wordTags = new Tag[tagn]; //TODO : Change this
+   
     rf.close();
    }catch(EOFException e){
-        e.printStackTrace();  
-    
+        return -1; //Tag not found at end of file 
    }catch(FileNotFoundException e){
-       e.printStackTrace();
+       //TODO: Throw appropraiate exception here
+       System.out.print("Adw:FNF");
    } 
    catch(IOException e){
-       
+       //Throw Approprate Exception here
+       System.out.print("IOEx");
    }
     
     return index;
@@ -325,8 +441,10 @@ public final int wordCount() throws FileNotFoundException{
      count = rf.readInt();
      
      
-    }catch(IOException e){
-        
+    }
+    catch(IOException e){
+        //Throw appropriate exception here
+        System.out.println("C:ERR");
     }
     return count;
 }
@@ -358,7 +476,7 @@ public final void setWordFile(File wordFile) throws FileNotFoundException{
          f.close();
          
        }catch(IOException e){
-          
+          System.out.println("IO Error while setting lexicon file");
        }
     }
     
@@ -370,13 +488,13 @@ public final void setWordFile(File wordFile) throws FileNotFoundException{
  * @return true if the magic number is valid, false otherwise
  */
 public final boolean hasMagic(){
-   RandomAccessFile raf = null; 
+   RandomAccessFile raf; 
    byte[] B = {0,0,0};
    try{ 
-   raf = new RandomAccessFile(file,"rw");
-   raf.read(B);
-   raf.close();
-   }catch(Exception e){
+     raf = new RandomAccessFile(file,"rw");
+     raf.read(B);
+     raf.close();
+   }catch(IOException e){
        return false;
    }
    
@@ -422,6 +540,28 @@ class FileAccess{
         
        
       
+    }
+    public static void insertUTF(RandomAccessFile rf, String str) throws IOException{
+        RandomAccessFile rtmp = new RandomAccessFile(File.createTempFile("__grammar",".tmp"),"rw");
+        long fileSize = rf.length();
+        
+        FileChannel sChannel = rf.getChannel(); //Source Channel
+        FileChannel tChannel = rtmp.getChannel(); //Target Channel
+        
+        sChannel.transferTo(rf.getFilePointer(), fileSize - rf.getFilePointer(), tChannel);
+        sChannel.truncate(rf.getFilePointer());
+        
+        long oldOffset = rf.getFilePointer();
+        
+        rf.writeUTF(str);
+        
+        long newOffset = rf.getFilePointer();
+        tChannel.position(0L);
+        sChannel.transferFrom(tChannel, newOffset, fileSize - oldOffset );
+        
+        tChannel.close();
+        rf.seek(oldOffset);
+        
     }
     
     public static void insert(RandomAccessFile rf, byte data) throws IOException{
