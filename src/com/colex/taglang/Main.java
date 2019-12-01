@@ -12,19 +12,10 @@ public class Main {
           * @param args Command-line arguments
           */
 	public static void main(String[] args) throws Exception{
+                 
 		String command;
 		Scanner input = new Scanner(System.in);
-                
-                Tag[] tg = new Tag[3];
-                
-                //delete the s
-                File fl = new File("C:/Users/Neville/Documents/code/Dum/tag.lx");    
-                Lexicon lex = new Lexicon(fl);
-                
-              
-                System.out.println(lex.findWord("ship"));
-      
-                //deelete
+   
 	
 		System.out.println("Taglang 1.0 NLP Command Line Utility");
                 
@@ -46,14 +37,13 @@ public class Main {
 				System.out.print(fs.nextLine());
 				
 				
-				
 
                 System.out.println();
 				}
 				System.out.println();
 				fs.close();
 			 }catch (FileNotFoundException e) {
-				System.err.println("Configuration Error: Invalid Configuration: 1021");
+				System.err.println("Configuration Error: Invalid Configuration: 1021"); //TODO: Change this
 			 }
 			
 			    
@@ -61,8 +51,11 @@ public class Main {
 		   
 		   if(command.equals("version")) {
 				 System.out.println(Main.VERSION);	
-				 continue;	
+			         continue;	
 		    }  
+                   if(command.startsWith("add")){
+                      
+                   }
 				
 		   
         
