@@ -108,7 +108,7 @@ public Tag getTag(int index){
     
     RandomAccessFile rf;
     
-    Tag tag;
+    Tag tag = new Tag("");
     
     short taglp; //Pointer to the taglist
     int tagll; //Number of tags in the taglist
@@ -124,18 +124,21 @@ public Tag getTag(int index){
     
     tagll = rf.readInt();
     
+    if(index == 0){
+        return null; //Tag indices start with 1
+    }
+    
     if(index > tagll){
         //ERROR: Index out of bounds
         System.out.println("Error: Tag index out of bounds");
     }
     
-    int b = 3; //Temporary variable initialized to arbitrary non zero value
-    
-    while( b != 0){
-        rf.readUTF();
-        
+    for(int i=0;i<tagll-index+1;i++){
+        tag = new Tag(rf.readUTF());
     }
-    
+    if(tag.text.equals(""))
+        return null;
+    return tag;
     
     
    }catch(FileNotFoundException e){
@@ -275,28 +278,27 @@ public final void addWord(String word, Tag[] tags, boolean checkTagDuplicates,bo
  
   try{
     rf = new RandomAccessFile(this.file,"rw");
-  
+    
+    addTags(tags,checkTagDuplicates); //Adds list of tags 
+    tagi = findTags(tags);
+    
     rf.seek(0x03);
     taglp = rf.readShort(); //Pointer to taglist
     wordlp = rf.readLong(); //Pointer to wordlist
   
-   
-    addTags(tags,checkTagDuplicates); //Adds list of tags 
-    tagi = findTags(tags);
-  
     rf.seek(wordlp);
     wordll = rf.readInt();
-  //Add word tag indices
-    FileAccess.insertUTF(rf,word); //Adds word
-    FileAccess.insert(rf, (int)0);
+    
     for(int i=0;i<tags.length;i++){
-       FileAccess.insert(rf, tagi[i]);
+        FileAccess.insert(rf, (int)tagi[i]);
     }
+    FileAccess.insert(rf,(int)tags.length); //tag counter [tagc]
+    FileAccess.insertUTF(rf,word);
+    
+    
+    wordll++;
     rf.seek(wordlp);
     rf.writeInt(wordll);
-    System.out.print(wordll); //What? DEBUG
-  
-    rf.close();
    } 
    catch(EOFException e){
     //TODO: Throw appropriate exception here   
@@ -325,7 +327,7 @@ public final int findWord(String word){
     
     int wordll; //Number of words in the file
     int tagll;
-    boolean[] tagb; //Boolean expressing a list of all tags in the file
+    int tagi[]; // a list of all tags in the file
     int tagn = 0; //Number of tags for the word
     
     int index = -1;
@@ -336,57 +338,26 @@ public final int findWord(String word){
     
     rf.seek(0x03);
  
-    
     rf.readShort();
     wordlp = rf.readLong();
-    
-    //Find the word
+  
     rf.seek(wordlp);
     wordll = rf.readInt();
     
-    for(int i=0; i<wordll;i++){
-        String str;
-        int b = 3; //not zero
-        tagn = 0; //Number of tags on the word
-        while (b != 0){
-            b = rf.readInt(); //Read tag indices
-            tagn++;
-        }
-        str = rf.readUTF();
-        System.out.println(str); //DEBUG
+    for(int i=0;i<wordll;i++){
+        String str= rf.readUTF();
+        tagn = rf.readInt();
+        
+        tagi = new int[tagn];
         if(str.equals(word)){
-            break;
+            return wordll-i;
         }
         
+        for(int j=0;j<tagn;j++){
+            tagi[i] = rf.readInt();
+        }
     }
     
-    //TODO:REMOVE
-    /*
-    for(int i=0;i<wordll;i++){     
-        String text;
-        int b =-1;
-        
-        
-       text = FileAccess.readZString(rf);
-        
-       if(text.equals(word)){
-           found = true;
-           index = wordll - i;
-           
-           while(b != 0){
-               b = rf.readInt();
-               tagn++;
-           }
-          
-       }else{
-           while(b != 0){
-               b = rf.readInt(); //Skip through the tag pointers
-           }
-           break; //Exit the for loop, the word has been found;
-           
-       }
-    }
-    */
     this.wordTags = new Tag[tagn]; //TODO : Change this
    
     rf.close();
