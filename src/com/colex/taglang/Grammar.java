@@ -28,9 +28,9 @@ public class Grammar {
     * @param GrammarFile the grammar file to use
     * @throws FileNotFoundException if the grammar file can't be found this exception will be thrown.	
     */
-   public Grammar(File GrammarFile) throws FileNotFoundException {
+   public Grammar(File GrammarFile) throws IOException{
         if(!GrammarFile.exists()){
-            throw new FileNotFoundException();
+            GrammarFile.createNewFile();
         }
         file = GrammarFile;
    }

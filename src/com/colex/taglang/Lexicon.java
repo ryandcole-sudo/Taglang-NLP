@@ -31,10 +31,11 @@ private final static byte[] MAGIC ={0x54, 0x4c, 0x00};
 public Lexicon(File f){
     
     try{
-     this.setWordFile(f);
-    }catch(FileNotFoundException e){
-        file =f ;
+       this.setWordFile(f);
+    }catch(IOException e){
+        file =f ; //TODO: Change this
     }
+    
 }    
 
 public final void addTags(Tag[] tags){
@@ -354,7 +355,7 @@ public final int findWord(String word){
         }
         
         for(int j=0;j<tagn;j++){
-            tagi[i] = rf.readInt();
+            tagi[j] = rf.readInt();
         }
     }
     
@@ -424,13 +425,14 @@ public final int wordCount() throws FileNotFoundException{
  * Changes the word file used for the lexicon.
  * @param wordFile 
  * @throws FileNotFoundException if the lexicon file cannot be found.
+ * @throws IOException if there was an error writting to the file
  */
-public final void setWordFile(File wordFile) throws FileNotFoundException{
+public final void setWordFile(File wordFile) throws IOException,FileNotFoundException{
     
     byte[] S_HEADER = {0, 0x50,0,0,0,0,0,0,0,(byte)0x80}; //This is the standard header file. 
     
     if(!wordFile.exists()){
-        throw new FileNotFoundException();
+        wordFile.createNewFile();
     }
     this.file = wordFile;
     
@@ -440,14 +442,14 @@ public final void setWordFile(File wordFile) throws FileNotFoundException{
        try{ 
          f.write(MAGIC);
          f.write(S_HEADER);
-         f.writeUTF("Taglang version 1.0");
+         f.writeUTF("Taglang version "+Main.VERSION);
          for(int i=0; i<100; i++){
              f.write(0);
          }
          f.close();
          
        }catch(IOException e){
-          System.out.println("IO Error while setting lexicon file");
+          System.out.println("IO Error while setting lexicon file"); //TODO: Change this
        }
     }
     
