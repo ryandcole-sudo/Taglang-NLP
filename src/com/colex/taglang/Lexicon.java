@@ -37,18 +37,25 @@ public Lexicon(File f){
     }
     
 }    
-
+/**
+ * Adds a new tag to the tag list.
+ * @param tags The list of tags to be added.
+ */
 public final void addTags(Tag[] tags){
     addTags(tags,true);
 }
-
+/**
+ * Adds a new tag to the tag list.
+ * @param tags The list of tags to be added.
+ * @param checkDuplicates If true the function checks for previously added tags 
+ * to avoid duplicates otherwise the function ignores duplicates and adds any ways
+ * 
+ */
 public final void addTags(Tag[] tags, boolean checkDuplicates){
     
     RandomAccessFile rf;
-    
     short taglp; //Pointer to taglist
     int tagll; //Number of tags in the taglist
-    
     long wordlp;
     
     int[] tagi = new int[tags.length]; //Shows the location of each tag (If it already exists) or -1 if it doesn't. To void duplicates.
@@ -66,14 +73,9 @@ public final void addTags(Tag[] tags, boolean checkDuplicates){
         
         tagll = rf.readInt(); //Reads the tag length
         
-        
-        
         for(int i =0;i < tags.length; i++){
          if(tagi[i] == -1 && checkDuplicates){ //If the tag doesn't exist yet. add it
-           // FileAccess.insert(rf, (byte)0); //Insert tthe seperator (0) byte for tags. //CONSIDER: REMOVE
-           System.out.print(tagi[i]); //DEBUG
             FileAccess.insertUTF(rf, tags[i].text); 
-            
             wordlp += tags[i].text.length() + 1; 
             tagll++; 
           }
@@ -96,8 +98,6 @@ public final void addTags(Tag[] tags, boolean checkDuplicates){
            //TODO: Throw apprpriate exception here
            System.out.print("IOE");
        }
-   
-    
 }
 
 /**
@@ -156,7 +156,9 @@ public Tag getTag(int index){
 }
 
 /**
- * Finds the index of various tags
+ * Finds the index of various tags.
+ * 
+ * All tags are assumed to be of type default even if they are otherwise.
  * @param tags
  * @return an array of integer of length equal to than of the @param tag, each 
  * element of the array is an index of the  corresponding tag, or -1 if the tag doesn't exist
@@ -175,13 +177,9 @@ public final int[] findTags(Tag[] tags){
   RandomAccessFile rf;
  try{ 
   rf = new RandomAccessFile(this.file,"rw");
-  
   rf.seek(0x03); //Jumps to right after the magic number.
-  
   taglp = rf.readShort(); 
-  
   rf.seek(taglp);
-  
   tagll = rf.readInt();
   
   if(tagll == 0){
@@ -213,7 +211,10 @@ public final int[] findTags(Tag[] tags){
 }
 
 /**
- * Finds a tag
+ * Finds a tag in the tag list of the file.
+ * 
+ * All tags are assumed to be of type default even if they are otherwise.
+ * @param tg - The tag to search for
  * @return true if the tag is found and false otherwise.
  */
 public final boolean findTag(Tag tg){
@@ -221,7 +222,6 @@ public final boolean findTag(Tag tg){
     int idx[] = new int[1];
     tgs[0] = tg;
     idx = findTags(tgs);
-    
     if(idx[0] == -1)
         return false;
     else
@@ -315,24 +315,22 @@ public final void addWord(String word, Tag[] tags, boolean checkTagDuplicates,bo
    }
 }
 /**
- *  Finds a word in the lexicon and returns the index of the word found. The word
- *  tags can later be accessed by getWordTags.
+ *  Finds a word in the lexicon and returns the index of the word found. The tags
+ *  for the word can later be accessed through the getWordTags() method. 
  * @param word the word to search for.
  * @return  the index of the word found, -1 if word isn't found.
+ * @see getWordTags
  */
 public final int findWord(String word){
     long wordlp; //Pointer to the word list
     long taglp; //Pointer to the taglist
-    
     boolean found; //Whether or not the word was found
     
     int wordll; //Number of words in the file
     int tagll;
     int tagi[]; // a list of all tags in the file
     int tagn = 0; //Number of tags for the word
-    
     int index = -1;
-    
     RandomAccessFile rf;
    try{ 
     rf = new RandomAccessFile(this.file,"rw");
@@ -377,8 +375,12 @@ public final int findWord(String word){
 }
 
 /**
- * Returns the tags of the most recently accessed word in the lexicon
+ * Returns the tags of the most recently accessed word in the lexicon. This 
+ * method should only be called after the findWord method. findWord will find a 
+ * list of tags associated with the word and store them.
  * @return The list of tags 
+ * @see findWord
+ * @since v1.0
  */
 public final Tag[] getWordTags(){
     return wordTags;
@@ -388,6 +390,8 @@ public final Tag[] getWordTags(){
  * Finds a word and returns the list of tags associated with the word
  * @param word
  * @return List of tags, if word is found. null otherwise.
+ * @see getWordTags
+ * @see findWord
  */
 public final Tag[] findWordTags(String word){
  if(this.findWord(word) != -1){
@@ -425,7 +429,7 @@ public final int wordCount() throws FileNotFoundException{
  * Changes the word file used for the lexicon.
  * @param wordFile 
  * @throws FileNotFoundException if the lexicon file cannot be found.
- * @throws IOException if there was an error writting to the file
+ * @throws IOException if there was an error writing to the file
  */
 public final void setWordFile(File wordFile) throws IOException,FileNotFoundException{
     
@@ -460,7 +464,7 @@ public final void setWordFile(File wordFile) throws IOException,FileNotFoundExce
  * <i>54 4c 00</i>.
  * @return true if the magic number is valid, false otherwise
  */
-public final boolean hasMagic(){
+private boolean hasMagic(){
    RandomAccessFile raf; 
    byte[] B = {0,0,0};
    try{ 
@@ -511,9 +515,12 @@ class FileAccess{
         tChannel.close();
         rf.seek(oldOffset);
         
-       
       
     }
+    /*Inserts a String formatted in a modified UTF-8 format without overwritting
+    the previosly inserted data there.
+    
+    */
     public static void insertUTF(RandomAccessFile rf, String str) throws IOException{
         RandomAccessFile rtmp = new RandomAccessFile(File.createTempFile("__grammar",".tmp"),"rw");
         long fileSize = rf.length();

@@ -77,12 +77,12 @@ public class Main {
             }
             
             if(command.equals("count")){ //Returns the number of...
-                command = input.nextLine();
+                command = input.next();
                 if(command.equals("words")){
                     input.nextLine();
                     System.out.println(lex.wordCount());
                 }
-                if(command.equals("rule")){
+                if(command.equals("rules")){
                     input.nextLine();
                     System.out.println(rule.ruleCount());
                 }
