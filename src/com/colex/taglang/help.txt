@@ -1,3 +1,17 @@
 This is the command line interface to Taglang. Taglang is a natural language processing interface. The interface is intended to be used for processing languages using what are called Tags.
-Each morpheme and word is tagged
-with a tag.
+Each morpheme and word is tagged.
+Commands:
+ lex [file.lx] - Specifies the lexicon file to be used by the main parsers.
+ rule [file.tg] - Specifies the grammar file to be used by the main parsers
+ 
+ add word word [tag1] [tag2] ... - Adds a word to the lexicon and specifies the tags for the word
+ add rule [grammar_rule] - Specifies a grammar rule. This is written directly to the file as is.
+
+ count words - Displays the number of words in the lexicon.
+ count rules - Displays the number of rules in the grammar.
+
+ list words - Lists all the words in a lexicon.
+ list rules - Displays the contents of the grammar file (excluding comments).
+
+ exit - Exits the interactive interface.
+ version - Displays the version
