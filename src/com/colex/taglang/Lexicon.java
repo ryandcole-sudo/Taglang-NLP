@@ -76,7 +76,7 @@ public final void addTags(Tag[] tags, boolean checkDuplicates){
         for(int i =0;i < tags.length; i++){
          if(tagi[i] == -1 && checkDuplicates){ //If the tag doesn't exist yet. add it
             FileAccess.insertUTF(rf, tags[i].text); 
-            wordlp += tags[i].text.length() + 1; 
+            wordlp += tags[i].text.length() + 2; 
             tagll++; 
           }
         }
@@ -189,9 +189,7 @@ public final int[] findTags(Tag[] tags){
   for(int i=0;i<tagll;i++){
       String str = rf.readUTF();
       for(int j =0; j<tags.length;j++){
-         String tagstr = "$";
-         tagstr = tagstr.concat(str);
-         if(tagstr.equals(tags[j].toString())){
+         if(str.equals(tags[j].text)){
            idx[j] = tagll -j;
          }        
       }
@@ -263,10 +261,8 @@ public final void addWord(String word, Tag[] tags,boolean checkDuplicates){
 public final void addWord(String word, Tag[] tags, boolean checkTagDuplicates,boolean checkWordDuplicates){
   RandomAccessFile rf; 
 
-  short taglp; //Pointer to taglist
   long wordlp; //Pointer to wordlist
-  
-  int tagll; //Number of tags in the taglist
+
   int wordll; //Number of words in the wordlist
   
   int tagi[] = new int[tags.length]; //Index for each tag
@@ -284,7 +280,7 @@ public final void addWord(String word, Tag[] tags, boolean checkTagDuplicates,bo
     tagi = findTags(tags);
     
     rf.seek(0x03);
-    taglp = rf.readShort(); //Pointer to taglist
+    rf.readShort(); //Pointer to taglist
     wordlp = rf.readLong(); //Pointer to wordlist
   
     rf.seek(wordlp);
@@ -400,6 +396,46 @@ public final Tag[] findWordTags(String word){
  return null;
 }
 /**
+ * Lists all the words in the word list.
+ * @return an array containing all the words
+ */
+public String[] listWords(){
+  
+  long wordlp;
+  int wordll;
+  
+  String worda[];
+  RandomAccessFile rf;
+  
+  try{
+      rf = new RandomAccessFile(file,"rw");
+      rf.seek(0x03);
+      rf.readShort();
+      wordlp = rf.readLong();
+      
+      rf.seek(wordlp);
+      
+      wordll = rf.readInt();
+      
+      worda = new String[wordll];
+      for(int i=0;i<wordll;i++){
+         worda[i] = rf.readUTF();
+         int tagc = rf.readInt();
+         for(int j=0;j<tagc;j++){
+             rf.readInt(); //Skips through the list of tags
+         }
+      }
+      rf.close();
+      return worda;
+  }catch(FileNotFoundException e){
+      
+  }catch(IOException e){
+      
+  }  
+  return null;   
+}
+
+/**
  * Finds the number of words in the lexicon.
  * @return the number of words in the lexicon
  * @throws FileNotFoundException if the lexicon file can't be found
@@ -459,6 +495,28 @@ public final void setWordFile(File wordFile) throws IOException,FileNotFoundExce
     
     
 }
+
+/**
+ *  Appends tag to a word.
+ * @param tags - Tag indices
+ * @param wordlp - Pointer to the word to append to
+ * @param rf
+ * @throws IOException 
+ */
+private void appendTags(int[] tags, long wordlp, RandomAccessFile rf) throws IOException{
+    int wordll;
+    rf.seek(wordlp);
+    
+    rf.readUTF();
+    int tagll= rf.readInt();
+    for(int i=0;i<tagll;i++){
+        rf.readInt();
+    }
+    for(int i=0;i<tags.length;i++){
+        FileAccess.insert(rf, (int)tags[i]);
+    }
+}
+
 /**
  * Test whether or not the file has a valid magic number. The magic number is
  * <i>54 4c 00</i>.
@@ -499,20 +557,17 @@ class FileAccess{
         long fileSize = rf.length();
         
         FileChannel sChannel = rf.getChannel(); //Source channel
-        FileChannel tChannel = rtmp.getChannel(); //Target channel
-        
-        sChannel.transferTo(rf.getFilePointer(), fileSize - rf.getFilePointer(), tChannel);
-        sChannel.truncate(rf.getFilePointer());
-        
-        long oldOffset = rf.getFilePointer(); 
-        
-        rf.write(data);
-        
-        long newOffset = rf.getFilePointer();
-        tChannel.position(0L);
-        sChannel.transferFrom(tChannel, newOffset, fileSize - oldOffset );
-        
-        tChannel.close();
+        long oldOffset;
+        try (FileChannel tChannel = rtmp.getChannel() //Target channel
+        ) {
+            sChannel.transferTo(rf.getFilePointer(), fileSize - rf.getFilePointer(), tChannel);
+            sChannel.truncate(rf.getFilePointer());
+            oldOffset = rf.getFilePointer();
+            rf.write(data);
+            long newOffset = rf.getFilePointer();
+            tChannel.position(0L);
+            sChannel.transferFrom(tChannel, newOffset, fileSize - oldOffset );
+        }
         rf.seek(oldOffset);
         
       

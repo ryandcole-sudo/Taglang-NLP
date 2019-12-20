@@ -92,7 +92,12 @@ public class Main {
             if(command.equals("list")){ //List all...
               command = input.next();
               if(command.equals("words")){
-                  //TODO: Add method to list words here
+                  String wordl[] = lex.listWords();
+                  
+                  for(String word:wordl){
+                      System.out.print(word+" ");
+                  }
+                  System.out.println();
               }
             }
             if(command.equals("lex")){ //Sets lexicon 
