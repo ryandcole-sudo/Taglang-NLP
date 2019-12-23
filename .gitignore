@@ -1,9 +1,7 @@
 /build/
 /dist/
 
-.*class
-
+*.class
+*.properties
 *.jar
 *.war
-*.
-
